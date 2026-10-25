@@ -68,9 +68,11 @@ Resultado: ✅ ok · ⚠️ ok com ressalva (descrever) · ❌ falhou (descrever
 | Teste | Comando | Resultado |
 | --- | --- | --- |
 | Typecheck strict | `npm run typecheck` | ✅ sem erros |
-| Unitários (máquina de estados, classificação de erros da câmera) | `npm test` | ✅ 14/14 |
+| Unitários (estado, erros da câmera, dicas da câmera, nota/foco/cena, homografia, função de IA com SDK simulado) | `npm test` | ✅ 28/28 |
 | Build de produção | `npm run build` | ✅ |
 | E2E com câmera simulada (Chromium headless, vídeo `.y4m` com a obra aparecendo/sumindo) | `npm run test:e2e` | ✅ scanning → found → lost → found; câmera encerrada ao sair; modo demo; zero violações de CSP |
-| Mesmo E2E contra produção (Vercel, cabeçalhos reais) | `npm run test:e2e -- --url https://webar-arte-expandida.vercel.app` | ✅ found em 3,0 s; lost/found coerentes; zero violações de CSP |
+| E2E de cadastro (foto na parede → cantos automáticos → compilação → IA simulada) + reconhecimento de 2 obras | `node tests/e2e/register.e2e.mjs` | ✅ nota 83; as duas obras reconhecidas com legenda; câmera encerrada |
+| Os dois E2E contra produção (Vercel) | `... --url https://webar-arte-expandida.vercel.app` | ✅ todos os passos; zero violações de CSP |
+| IA real (Claude) | — | ⏳ PENDENTE: falta `ANTHROPIC_API_KEY` na Vercel; função publicada responde `ai-not-configured` e o app usa a análise local |
 
 O E2E prova a integração (alvo compilado ↔ motor ↔ eventos ↔ UI), **não** o comportamento óptico real (foco, reflexo, ruído de sensor, desempenho de GPU móvel).
