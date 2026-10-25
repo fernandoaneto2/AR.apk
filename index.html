@@ -4,43 +4,173 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#111214" />
-    <meta name="description" content="Experiência WebAR: aponte a câmera para a obra impressa e veja camadas digitais 3D sobre ela." />
+    <meta name="description" content="Cadastre sua obra, deixe a IA criar a experiência e aponte a câmera para ver camadas 3D surgirem sobre ela." />
     <title>Arte Expandida</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23111214'/%3E%3Cpath d='M12 5l6 3.4v7.2L12 19l-6-3.4V8.4z' fill='none' stroke='%232bb3a8' stroke-width='1.8'/%3E%3C/svg%3E" />
   </head>
   <body>
-    <main id="home" class="screen home" aria-labelledby="art-title">
-      <header class="brand">Arte Expandida <span class="brand-tag">WebAR</span></header>
-      <figure class="artwork">
-        <img id="art-preview" alt="" width="1200" height="1600" decoding="async" />
-        <figcaption>
-          <h1 id="art-title"></h1>
-          <p id="art-meta" class="meta"></p>
-        </figcaption>
-      </figure>
-      <p class="instruction">Aponte a câmera para a obra impressa.</p>
+    <!-- ============ INÍCIO ============ -->
+    <main id="home" class="screen page" aria-labelledby="home-title">
+      <header class="brand">Arte Expandida <span class="brand-tag">WebAR + IA</span></header>
+      <section class="hero">
+        <h1 id="home-title">Dê vida às suas obras</h1>
+        <p class="lead">Cadastre uma pintura, mural ou impresso. A IA entende a obra e cria camadas 3D que surgem quando você aponta a câmera para ela.</p>
+      </section>
       <div class="actions">
-        <button id="btn-start" class="btn btn-primary" type="button"></button>
-        <button id="btn-demo" class="btn btn-ghost" type="button"></button>
+        <button id="btn-scan" class="btn btn-primary" type="button"></button>
+        <button id="btn-new" class="btn btn-ghost" type="button"></button>
       </div>
+
+      <section class="gallery-section" aria-labelledby="gallery-title">
+        <h2 id="gallery-title" class="section-title">Suas obras</h2>
+        <p id="gallery-empty" class="muted" hidden>Nenhuma obra cadastrada ainda. Toque em <strong>Cadastrar nova obra</strong>.</p>
+        <ul id="gallery" class="gallery" role="list"></ul>
+      </section>
+
       <aside id="handoff" class="handoff" hidden aria-labelledby="handoff-title">
         <div id="handoff-qr" class="handoff-qr" role="img" aria-label="QR Code com o endereço desta página"></div>
         <div>
           <h2 id="handoff-title">Abra no celular</h2>
-          <p>Aponte a câmera do celular para este código. A realidade aumentada funciona no Safari (iPhone) e no Chrome (Android).</p>
-          <a class="handoff-print" href="./imprimir.html">Imprimir a obra com QR Code</a>
+          <p>A câmera e o cadastro funcionam no Safari (iPhone) e no Chrome (Android). Aponte a câmera do celular para este código.</p>
+          <a class="handoff-print" href="./imprimir.html">Imprimir a obra de exemplo</a>
         </div>
       </aside>
+
       <details class="about">
-        <summary>Sobre a experiência e privacidade</summary>
-        <p id="art-description"></p>
-        <p>
-          A câmera é usada apenas para reconhecer a obra, localmente no seu aparelho. Nenhuma imagem ou vídeo é gravado, transmitido
-          ou armazenado.
-        </p>
+        <summary>Privacidade e como funciona</summary>
+        <p>Reconhecimento e câmera rodam no seu aparelho: nenhum vídeo é gravado ou enviado. As obras cadastradas ficam salvas só neste navegador.</p>
+        <p>Se você ativar a análise por IA, apenas a imagem da obra (não a câmera) é enviada para a Anthropic (Claude) para sugerir título, descrição e efeitos.</p>
       </details>
     </main>
 
+    <!-- ============ NOVA OBRA ============ -->
+    <main id="create" class="screen page" hidden aria-labelledby="create-title">
+      <header class="topbar">
+        <button id="create-back" class="icon-btn icon-btn--light" type="button" aria-label="Voltar"></button>
+        <h1 id="create-title">Nova obra</h1>
+      </header>
+
+      <section id="step-pick" class="step">
+        <ol class="guide">
+          <li><strong>De frente</strong> para a obra, com ela inteira na foto.</li>
+          <li><strong>Luz uniforme</strong>, sem flash e sem reflexo.</li>
+          <li>Se tiver o arquivo digital da obra, prefira <strong>escolher da galeria</strong>.</li>
+        </ol>
+        <label class="check">
+          <input id="chk-rights" type="checkbox" />
+          <span>Sou autor(a) desta obra ou tenho autorização para usar a imagem.</span>
+        </label>
+        <div class="actions">
+          <label class="btn btn-primary file-btn" aria-disabled="true">
+            <span id="lbl-camera"></span>
+            <input id="in-camera" type="file" accept="image/*" capture="environment" disabled />
+          </label>
+          <label class="btn btn-ghost file-btn" aria-disabled="true">
+            <span id="lbl-gallery"></span>
+            <input id="in-gallery" type="file" accept="image/*" disabled />
+          </label>
+        </div>
+      </section>
+
+      <section id="step-crop" class="step" hidden>
+        <p class="step-title">Ajuste os 4 cantos à borda da obra</p>
+        <p id="crop-msg" class="muted small" aria-live="polite"></p>
+        <div id="cropper-host" class="cropper-host"></div>
+        <div class="row-actions">
+          <button id="btn-crop-auto" class="chip" type="button">Detectar automaticamente</button>
+          <button id="btn-crop-full" class="chip" type="button">Usar imagem inteira</button>
+        </div>
+        <label class="field">
+          <span>Nome da obra <em>(opcional)</em></span>
+          <input id="in-name" type="text" maxlength="80" placeholder="A IA sugere um título" autocomplete="off" />
+        </label>
+        <label class="check">
+          <input id="chk-ai" type="checkbox" checked />
+          <span><strong>Analisar com IA (Claude).</strong> Envia só esta imagem para a Anthropic para sugerir título, descrição e efeitos.</span>
+        </label>
+        <div class="actions">
+          <button id="btn-process" class="btn btn-primary" type="button">Criar experiência</button>
+          <button id="btn-repick" class="btn btn-link" type="button">Escolher outra imagem</button>
+        </div>
+      </section>
+
+      <section id="step-process" class="step" hidden aria-live="polite">
+        <p class="step-title">Criando a experiência…</p>
+        <ol class="progress-list">
+          <li data-step="analyze">Lendo cores, contraste e nitidez</li>
+          <li data-step="compile">Gerando o mapa de reconhecimento <span id="compile-pct"></span></li>
+          <li data-step="ai">IA analisando a obra</li>
+          <li data-step="save">Salvando neste aparelho</li>
+        </ol>
+        <div class="bar" aria-hidden="true"><div id="process-bar" class="bar-fill"></div></div>
+        <p class="muted small">Leva de 10 a 40 segundos, dependendo do aparelho.</p>
+        <button id="btn-cancel" class="btn btn-link" type="button">Cancelar</button>
+      </section>
+    </main>
+
+    <!-- ============ DETALHES DA OBRA ============ -->
+    <main id="detail" class="screen page" hidden aria-labelledby="detail-title">
+      <header class="topbar">
+        <button id="detail-back" class="icon-btn icon-btn--light" type="button" aria-label="Voltar"></button>
+        <h1 id="detail-title" class="ellipsis"></h1>
+      </header>
+      <img id="detail-img" class="detail-img" alt="" />
+      <div class="actions">
+        <button id="btn-detail-ar" class="btn btn-primary" type="button"></button>
+        <button id="btn-detail-demo" class="btn btn-ghost" type="button"></button>
+      </div>
+
+      <section class="card" aria-labelledby="q-title">
+        <div class="quality">
+          <div id="q-gauge" class="gauge" role="img"><span id="q-score"></span></div>
+          <div>
+            <h2 id="q-title" class="card-title">Reconhecimento: <span id="q-level"></span></h2>
+            <p id="q-meta" class="muted small"></p>
+          </div>
+        </div>
+        <ul id="q-tips" class="tips"></ul>
+        <p id="ai-note" class="muted small"></p>
+      </section>
+
+      <section class="card" aria-labelledby="fx-title">
+        <h2 id="fx-title" class="card-title">Efeitos</h2>
+        <p id="detail-caption" class="caption-preview"></p>
+        <div class="toggles">
+          <label class="toggle"><input id="fx-layers" type="checkbox" /> <span>Camadas em relevo</span></label>
+          <label class="toggle"><input id="fx-particles" type="checkbox" /> <span>Partículas</span></label>
+          <label class="toggle"><input id="fx-aura" type="checkbox" /> <span>Aura de reconhecimento</span></label>
+          <label class="toggle"><input id="fx-orbit" type="checkbox" /> <span>Objeto 3D</span></label>
+        </div>
+        <div class="selects">
+          <label class="field"><span>Forma das partículas</span>
+            <select id="fx-shape">
+              <option value="circle">Luz</option>
+              <option value="petal">Pétala</option>
+              <option value="spark">Estrela</option>
+              <option value="square">Pixel</option>
+            </select>
+          </label>
+          <label class="field"><span>Movimento</span>
+            <select id="fx-motion">
+              <option value="rise">Subir</option>
+              <option value="drift">Flutuar</option>
+              <option value="fall">Cair</option>
+              <option value="swirl">Redemoinho</option>
+            </select>
+          </label>
+        </div>
+        <div class="palette" id="detail-palette" aria-label="Paleta da obra"></div>
+      </section>
+
+      <section class="card" aria-labelledby="info-title">
+        <h2 id="info-title" class="card-title">Informações</h2>
+        <label class="field"><span>Nome</span><input id="detail-name" type="text" maxlength="80" /></label>
+        <p id="detail-desc" class="muted"></p>
+        <button id="btn-detail-delete" class="btn btn-danger" type="button">Excluir obra</button>
+      </section>
+    </main>
+
+    <!-- ============ AR ============ -->
     <section id="ar" class="screen ar" hidden aria-label="Experiência em realidade aumentada">
       <div id="ar-stage" class="ar-stage"></div>
       <div class="hud">
@@ -51,7 +181,9 @@
             <button id="btn-close" class="icon-btn" type="button" aria-label="Sair da experiência"></button>
           </div>
         </div>
+        <div id="targets" class="targets" hidden></div>
         <div id="scan-frame" class="scan-frame" aria-hidden="true"></div>
+        <div id="caption" class="caption" hidden></div>
         <p id="hint" class="hint" aria-live="polite"></p>
         <p id="fps" class="fps" hidden></p>
       </div>
@@ -69,7 +201,6 @@
           <ol id="error-steps" class="steps"></ol>
           <div class="actions">
             <button id="btn-retry" class="btn btn-primary" type="button">Tentar novamente</button>
-            <button id="btn-error-demo" class="btn btn-ghost" type="button">Ver demonstração sem câmera</button>
             <button id="btn-error-back" class="btn btn-link" type="button">Voltar ao início</button>
           </div>
         </div>
@@ -78,16 +209,17 @@
       <dialog id="help" class="help" aria-labelledby="help-title">
         <h2 id="help-title">Dicas para reconhecer a obra</h2>
         <ul>
-          <li>Enquadre a obra inteira, a cerca de 30–60 cm (impressão A4).</li>
-          <li>Prefira luz uniforme e indireta; evite reflexos e sombras fortes.</li>
+          <li>Enquadre a obra inteira, sem cortar bordas.</li>
+          <li>Luz uniforme; evite reflexos (vidro, verniz, telas) e sombras fortes.</li>
           <li>Segure o aparelho firme e mova devagar.</li>
-          <li>Se os elementos sumirem, aponte de novo para a obra.</li>
-          <li>Não está funcionando? Use a demonstração sem câmera na tela inicial.</li>
+          <li>A obra precisa estar cadastrada. Obras parecidas, mas diferentes, não são reconhecidas.</li>
+          <li>Se a nota de reconhecimento da obra for baixa, refaça a foto do cadastro com mais luz e de frente.</li>
         </ul>
         <form method="dialog"><button class="btn btn-primary" type="submit">Entendi</button></form>
       </dialog>
     </section>
 
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     <noscript><p class="noscript">Esta experiência precisa de JavaScript habilitado.</p></noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>

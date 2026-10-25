@@ -12,11 +12,12 @@ export const createMindAREngine: EngineFactory = async ({ video, targetBuffer, o
     inputWidth: video.videoWidth,
     inputHeight: video.videoHeight,
     maxTrack: 1,
-    // Valores padrão do MindAR; ajustar aqui após medições de jitter em campo.
+    // Suavização: padrão do MindAR. Entrada mais rápida (3 quadros) e saída mais tolerante
+    // (8 quadros) que o padrão (5/5): menos "pisca-pisca" em movimento, telas e luz difícil.
     filterMinCF: null,
     filterBeta: null,
-    warmupTolerance: null,
-    missTolerance: null,
+    warmupTolerance: 3,
+    missTolerance: 8,
     onUpdate: (data) => {
       if (data.type === 'updateMatrix') onTargetUpdate(data.targetIndex, data.worldMatrix);
     },

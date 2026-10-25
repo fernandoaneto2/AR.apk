@@ -39,6 +39,21 @@ Resultado: ✅ ok · ⚠️ ok com ressalva (descrever) · ❌ falhou (descrever
 | 15 | Acessibilidade | Ativar "Reduzir movimento" no sistema | Animações mais lentas, menos partículas | | |
 | 16 | QR / impressão | Abrir a página no computador; ler o QR com o celular; imprimir `/imprimir.html` | QR abre a experiência; folha A4 em 1 página | | |
 
+## Cadastro de obra própria e IA
+
+| # | Caso | Procedimento | Esperado | iPhone | Android |
+| --- | --- | --- | --- | --- | --- |
+| C1 | Foto pela câmera | Cadastrar › Fotografar uma pintura na parede | Cantos detectados (ou mensagem pedindo ajuste); recorte correto | | |
+| C2 | Galeria | Escolher um arquivo digital da obra | "Usar imagem inteira" funciona | | |
+| C3 | Tempo | Medir do toque em "Criar experiência" até a tela da obra | ≤ 40 s; anotar | | |
+| C4 | IA | Com `ANTHROPIC_API_KEY` na Vercel | Título, descrição, legenda e efeitos coerentes com a obra | | |
+| C5 | Sem IA | Desmarcar IA | Cena local; nenhuma chamada a /api/analyze | | |
+| C6 | Nota | Comparar nota de foto boa vs. foto escura/torta | Nota e dicas mudam de forma coerente | | |
+| C7 | Reconhecer | Apontar para a obra cadastrada | Reconhece; legenda; camadas alinhadas | | |
+| C8 | Várias obras | Cadastrar 2–3 obras e usar "Apontar para uma obra" | Cada uma é reconhecida com seus efeitos | | |
+| C9 | Dicas da câmera | Ambiente escuro / reflexo / mexer o celular | Dica correspondente aparece | | |
+| C10 | Persistência | Fechar e reabrir o navegador | Obras continuam na galeria | | |
+
 ## Medições (metas iniciais, não garantias)
 
 | Métrica | Meta | iPhone | Android |

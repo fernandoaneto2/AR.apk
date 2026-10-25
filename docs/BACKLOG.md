@@ -7,6 +7,13 @@
 - [ ] Ajustar `filterMinCF`/`filterBeta`/`missTolerance` conforme jitter observado.
 - [ ] Se carga em 4G > 8 s: recompilar o alvo a partir de imagem de 900 px e comparar estabilidade.
 
+## Próximos passos sugeridos (após a etapa 2)
+
+- **Compartilhar a experiência por link/QR** para visitantes (hoje as obras ficam só no aparelho de quem cadastrou): exige armazenamento (Vercel Blob ou Supabase) com moderação/limites.
+- Recorte por IA (segmentação) quando a detecção local falhar.
+- Calibrar a nota de reconhecimento com fotos reais (ajustar `GOOD_FEATURES`/`GOOD_TRACKING` em `src/artworks/analyze.ts`).
+- Efeitos adicionais por tema (água/ondas, chuva, luz volumétrica) e áudio ambiente opcional.
+
 ## M2 — Piloto (3–5 obras)
 
 - Suporte a múltiplas obras por URL (`/obra/<slug>`) e configuração por JSON (título, autor, alvo, cena).

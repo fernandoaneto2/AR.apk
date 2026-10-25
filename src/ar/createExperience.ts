@@ -17,9 +17,12 @@ import {
 } from 'three';
 import { ExperienceError, openCamera, stopCamera, syncVideoSize } from './camera';
 import type { EngineFactory, TrackingEngine } from './engine';
+import { FrameAdvisor, type CameraHint } from './frameAdvisor';
 import { createMindAREngine } from './mindarEngine';
 import type { TrackingStateMachine } from './trackingState';
-import { createFloatingShapes, type EffectsBundle } from '../effects/createFloatingShapes';
+import type { ArtworkEntry } from '../artworks/catalog';
+import { mergeTargets } from '../artworks/compileTarget';
+import { createSceneEffects, type EffectsBundle } from '../effects/sceneEffects';
 
 export type DistanceHint = 'too-far' | 'too-close' | null;
 
@@ -36,9 +39,13 @@ interface CommonOptions {
 }
 
 export interface ARExperienceOptions extends CommonOptions {
-  targetUrl: string;
+  /** Obras a reconhecer; a ordem define o targetIndex. */
+  artworks: ArtworkEntry[];
   state: TrackingStateMachine;
   onDistanceHint?: (hint: DistanceHint) => void;
+  onCameraHint?: (hint: CameraHint) => void;
+  /** Obra atualmente reconhecida (ou null ao perder). */
+  onArtwork?: (artwork: ArtworkEntry | null) => void;
   engineFactory?: EngineFactory;
 }
 
@@ -88,8 +95,30 @@ function postMatrixFor([w, h]: readonly [number, number]): Matrix4 {
   return new Matrix4().compose(new Vector3(w / 2, h / 2, 0), new Quaternion(), new Vector3(w, w, w));
 }
 
+const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
+function loadArtworkImage(url: string): Promise<HTMLImageElement | null> {
+  let p = imageCache.get(url);
+  if (!p) {
+    p = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+    imageCache.set(url, p);
+  }
+  return p;
+}
+
+interface AnchorSlot {
+  group: Group;
+  post: Matrix4;
+  effects: EffectsBundle | null;
+  building: boolean;
+}
+
 export async function startARExperience(opts: ARExperienceOptions): Promise<Experience> {
-  const { container, state, debug, reducedMotion } = opts;
+  const { container, state, debug, reducedMotion, artworks } = opts;
   const engineFactory = opts.engineFactory ?? createMindAREngine;
 
   const cleanups: Array<() => void> = [];
@@ -108,16 +137,16 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
   };
 
   try {
-    // 1) Alvo compilado.
+    // 1) Alvos compilados (um por obra), unidos num só arquivo.
     state.set({ kind: 'loading', step: 'assets' });
     let targetBuffer: ArrayBuffer;
     try {
-      const res = await fetch(opts.targetUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      targetBuffer = await res.arrayBuffer();
+      targetBuffer = await mergeTargets(await Promise.all(artworks.map((a) => a.loadMind())));
     } catch (err) {
       throw new ExperienceError('asset-missing', err);
     }
+    // Pré-carrega as imagens (camadas) enquanto a câmera abre.
+    artworks.forEach((a) => void loadArtworkImage(a.imageUrl));
 
     // 2) Renderização.
     const renderer = createRenderer(container);
@@ -129,10 +158,14 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
     const scene = new Scene();
     const camera = new PerspectiveCamera();
     addLights(scene);
-    const anchor = new Group();
-    anchor.matrixAutoUpdate = false;
-    anchor.visible = false;
-    scene.add(anchor);
+    const slots: AnchorSlot[] = artworks.map(() => {
+      const group = new Group();
+      group.matrixAutoUpdate = false;
+      group.visible = false;
+      scene.add(group);
+      return { group, post: new Matrix4(), effects: null, building: false };
+    });
+    cleanups.push(() => slots.forEach((s) => s.effects?.dispose()));
 
     // 3) Câmera (após o gesto do usuário que chamou esta função).
     state.set({ kind: 'loading', step: 'camera' });
@@ -146,14 +179,18 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
     await openCamera(video);
     if (stopped) return { stop };
 
+    const advisor = new FrameAdvisor(video, (h) => opts.onCameraHint?.(h));
+    cleanups.push(() => advisor.stop());
+    const offState = state.subscribe((s) => advisor.setSearching(s.kind === 'scanning' || s.kind === 'lost'));
+    cleanups.push(offState);
+
     // 4) Motor de rastreamento.
     state.set({ kind: 'loading', step: 'engine' });
     let engine: TrackingEngine | null = null;
-    let effects: EffectsBundle | null = null;
-    let postMatrix = new Matrix4();
     let inputW = 0;
     let inputH = 0;
     let lastHint: DistanceHint = null;
+    let visibleIndex = -1;
 
     const setHint = (h: DistanceHint) => {
       if (h !== lastHint) {
@@ -162,24 +199,52 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
       }
     };
 
-    const onTargetUpdate = (targetIndex: number, worldMatrix: number[] | null) => {
-      if (targetIndex !== 0 || stopped) return;
+    const ensureEffects = (i: number) => {
+      const slot = slots[i];
+      if (slot.effects || slot.building) return;
+      slot.building = true;
+      const art = artworks[i];
+      void loadArtworkImage(art.imageUrl).then((image) => {
+        if (stopped) return;
+        slot.effects = createSceneEffects({
+          scene: art.scene,
+          aspect: art.height / art.width,
+          image,
+          featurePoints: art.featurePoints,
+          reducedMotion,
+          debug,
+        });
+        slot.group.add(slot.effects.root);
+        slot.effects.playIntro();
+      });
+    };
+
+    const onTargetUpdate = (i: number, worldMatrix: number[] | null) => {
+      const slot = slots[i];
+      if (!slot || stopped) return;
       if (worldMatrix === null) {
-        anchor.visible = false;
-        setHint(null);
-        state.setTargetVisible(false);
+        slot.group.visible = false;
+        if (visibleIndex === i) {
+          visibleIndex = -1;
+          setHint(null);
+          opts.onArtwork?.(null);
+          state.setTargetVisible(false);
+        }
         return;
       }
-      anchor.matrix.fromArray(worldMatrix).multiply(postMatrix);
-      anchor.matrixWorldNeedsUpdate = true;
-      if (!anchor.visible) {
-        anchor.visible = true;
-        effects?.playIntro();
+      slot.group.matrix.fromArray(worldMatrix).multiply(slot.post);
+      slot.group.matrixWorldNeedsUpdate = true;
+      if (!slot.group.visible) {
+        slot.group.visible = true;
+        visibleIndex = i;
+        ensureEffects(i);
+        slot.effects?.playIntro();
+        opts.onArtwork?.(artworks[i]);
         state.setTargetVisible(true);
       }
       // Distância: tamanho aparente do alvo a partir da translação (px do alvo) e da focal do motor.
       if (!engine) return;
-      const [mw] = engine.targetDimensions[0];
+      const [mw] = engine.targetDimensions[i];
       const dist = Math.hypot(worldMatrix[12], worldMatrix[13], worldMatrix[14]);
       const focal = inputH / 2 / Math.tan((22.5 * Math.PI) / 180);
       const apparent = (focal * mw) / dist / Math.min(inputW, inputH);
@@ -196,12 +261,7 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
         return;
       }
       engine = e;
-      postMatrix = postMatrixFor(e.targetDimensions[0]);
-      if (!effects) {
-        const [w, h] = e.targetDimensions[0];
-        effects = createFloatingShapes({ aspect: h / w, reducedMotion }, debug);
-        anchor.add(effects.root);
-      }
+      e.targetDimensions.forEach((d, i) => slots[i]?.post.copy(postMatrixFor(d)));
       resize();
       e.start(video);
     };
@@ -232,7 +292,9 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
       try {
         engine.dispose();
         engine = null;
-        anchor.visible = false;
+        slots.forEach((s) => (s.group.visible = false));
+        visibleIndex = -1;
+        opts.onArtwork?.(null);
         state.setTargetVisible(false);
         await createEngine();
       } catch (err) {
@@ -257,7 +319,6 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
     cleanups.push(() => {
       engine?.dispose();
       engine = null;
-      effects?.dispose();
     });
     if (stopped) return { stop };
 
@@ -280,7 +341,7 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
     renderer.setAnimationLoop(() => {
       const dt = clock.getDelta();
       tickFps(dt);
-      if (anchor.visible) effects?.update(dt);
+      for (const s of slots) if (s.group.visible) s.effects?.update(dt);
       renderer.render(scene, camera);
     });
 
@@ -293,45 +354,51 @@ export async function startARExperience(opts: ARExperienceOptions): Promise<Expe
 }
 
 export interface DemoExperienceOptions extends CommonOptions {
-  imageUrl: string;
-  aspect: number;
+  artwork: ArtworkEntry;
 }
 
 /**
- * Modo demonstrativo sem câmera: a obra como plano texturizado com os mesmos efeitos,
+ * Prévia sem câmera: a obra como plano texturizado com os mesmos efeitos da experiência AR,
  * câmera orbitando suavemente e arrasto para girar. Não é rastreamento — é uma prévia.
  */
 export function startDemoExperience(opts: DemoExperienceOptions): Experience {
-  const { container, aspect, reducedMotion, debug } = opts;
+  const { container, artwork, reducedMotion, debug } = opts;
+  const aspect = artwork.height / artwork.width;
   const renderer = createRenderer(container);
   const scene = new Scene();
   addLights(scene);
   const camera = new PerspectiveCamera(40, 1, 0.01, 50);
 
-  const artwork = new Group();
-  scene.add(artwork);
+  const group = new Group();
+  scene.add(group);
   const planeGeo = new PlaneGeometry(1, aspect);
   const planeMat = new MeshBasicMaterial({ color: 0xffffff });
-  const texture = new TextureLoader().load(opts.imageUrl, (t) => {
+  const texture = new TextureLoader().load(artwork.imageUrl, (t) => {
     t.colorSpace = SRGBColorSpace;
     planeMat.map = t;
     planeMat.needsUpdate = true;
   });
-  artwork.add(new Mesh(planeGeo, planeMat));
-  const effects = createFloatingShapes({ aspect, reducedMotion }, debug);
-  artwork.add(effects.root);
-  effects.playIntro();
+  group.add(new Mesh(planeGeo, planeMat));
+  let effects: EffectsBundle | null = null;
+  let stopped = false;
+  void loadArtworkImage(artwork.imageUrl).then((image) => {
+    if (stopped) return;
+    effects = createSceneEffects({ scene: artwork.scene, aspect, image, featurePoints: artwork.featurePoints, reducedMotion, debug });
+    group.add(effects.root);
+    effects.playIntro();
+  });
 
   let yaw = 0.35;
   let pitch = 0.25;
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
+  const el = renderer.domElement;
   const onDown = (e: PointerEvent) => {
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
-    renderer.domElement.setPointerCapture(e.pointerId);
+    el.setPointerCapture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
     if (!dragging) return;
@@ -341,7 +408,6 @@ export function startDemoExperience(opts: DemoExperienceOptions): Experience {
     lastY = e.clientY;
   };
   const onUp = () => (dragging = false);
-  const el = renderer.domElement;
   el.addEventListener('pointerdown', onDown);
   el.addEventListener('pointermove', onMove);
   el.addEventListener('pointerup', onUp);
@@ -369,19 +435,18 @@ export function startDemoExperience(opts: DemoExperienceOptions): Experience {
     tickFps(dt);
     if (!dragging && !reducedMotion) yaw += dt * 0.12;
     camera.position.set(Math.sin(yaw) * Math.cos(pitch) * radius, Math.sin(pitch) * radius, Math.cos(yaw) * Math.cos(pitch) * radius);
-    camera.lookAt(0, 0, 0.15);
-    effects.update(dt);
+    camera.lookAt(0, 0, 0.08);
+    effects?.update(dt);
     renderer.render(scene, camera);
   });
 
-  let stopped = false;
   return {
     stop() {
       if (stopped) return;
       stopped = true;
       renderer.setAnimationLoop(null);
       window.removeEventListener('resize', resize);
-      effects.dispose();
+      effects?.dispose();
       planeGeo.dispose();
       planeMat.dispose();
       texture.dispose();

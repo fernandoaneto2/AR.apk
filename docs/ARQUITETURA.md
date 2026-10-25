@@ -35,6 +35,21 @@ Espaço da âncora: largura do alvo = 1, origem no centro da obra, +Z saindo da 
 | `video.width/height` = dimensões do stream | `tf.browser.fromPixels` usa os atributos, não `videoWidth`; sem isso nada é detectado (bug encontrado no E2E) | — |
 | CSP estrita (`script-src 'self'`, `worker-src blob:`) | Seção 09; MindAR usa workers inline (blob) | Qualquer CDN futura precisa entrar na política |
 
+## Etapa 2 — obras do usuário + IA (após o teste em campo)
+
+Feedback do teste no iPhone: (1) só reconhecia a arte de exemplo; (2) ao apontar para outra obra, ficava em "Procurando…" sem explicar; (3) efeitos genéricos, sem relação com a obra.
+
+| Problema | Solução |
+| --- | --- |
+| Obra fixa | Cadastro pelo usuário: recorte com detecção automática de cantos (máscara por cores da borda + abertura/fechamento morfológico + maior componente + verificação de preenchimento) e correção de perspectiva (homografia); compilação do `.mind` no navegador; obras no IndexedDB. |
+| Sem explicação | Miniaturas das obras procuradas no HUD; `FrameAdvisor` mede luminância, estouro, movimento e nitidez do vídeo (96×72, local) e dá a dica mais útil; após 12 s sugere que a obra pode não estar cadastrada. |
+| Efeitos genéricos | Efeitos derivados da imagem: camadas por cor (paleta k-means, classificação sobre imagem desfocada + filtro de maioria) que sobem com sombra; partículas nas cores da obra nascendo dos pontos de detalhe; aura; objeto 3D no ponto de interesse. |
+| "Inteligente" | Nota de reconhecimento a partir dos pontos reais do compilador (quantidade, cobertura) + contraste/nitidez, com dicas. Claude (`api/analyze.ts`) sugere título, descrição acessível, legenda, clima e efeitos. |
+| Uma obra por vez | Vários `.mind` unidos sem recompilar (`mergeTargets`); uma âncora por obra; até 8 simultâneas. |
+| Perda/flicker | `warmupTolerance` 3 e `missTolerance` 8 (padrão 5/5). |
+
+Bug encontrado e corrigido pelo E2E: a junção parede/mesa (transição borrada) era detectada como parte da obra, gerando recorte errado e alvo que não reconhecia. Corrigido com abertura morfológica e rejeição de quadriláteros pouco preenchidos.
+
 ## Contratos implementados (seção 06)
 
 - AR só inicia após clique; loading em três etapas (assets, câmera, motor).

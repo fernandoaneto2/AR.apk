@@ -90,7 +90,7 @@ try {
   await page.goto(`${REMOTE ?? `http://127.0.0.1:${PORT}`}/?debug=1`);
   await page.screenshot({ path: resolve(OUT, '01-home.png') });
   const t0 = Date.now();
-  await page.click('#btn-start');
+  await page.click('#btn-scan');
 
   const kinds = () => page.evaluate(() => window.__webar.state.log.map((e) => e.kind));
   const waitFor = async (predicate, label, timeout) => {
@@ -125,8 +125,11 @@ try {
   if (live !== 0) throw new Error(`Esperava nenhum <video> após sair; há ${live}.`);
   console.log('  ✓ saída: câmera e vídeo removidos');
 
-  // Modo demonstração renderiza sem câmera.
-  await page.click('#btn-demo');
+  // Prévia 3D (sem câmera) a partir da página da obra de exemplo.
+  await page.waitForSelector('#home:not([hidden])');
+  await page.click('.art-card');
+  await page.waitForSelector('#detail:not([hidden])');
+  await page.click('#btn-detail-demo');
   await page.waitForTimeout(1200);
   await page.screenshot({ path: resolve(OUT, '05-demo.png') });
   console.log(`  ✓ modo demonstração. Capturas em ${OUT}`);

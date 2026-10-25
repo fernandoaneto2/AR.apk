@@ -1,4 +1,6 @@
 import type { DistanceHint } from '../ar/createExperience';
+import type { CameraHint } from '../ar/frameAdvisor';
+import type { ArtworkEntry } from '../artworks/catalog';
 import type { ErrorKind, ExperienceState } from '../ar/trackingState';
 import { icons } from './icons';
 
@@ -25,7 +27,7 @@ const ERRORS: Record<ErrorKind, ErrorCopy> = {
   'no-camera': {
     title: 'Nenhuma câmera encontrada',
     text: 'Não encontramos uma câmera disponível neste aparelho.',
-    steps: ['Use um celular ou tablet com câmera traseira.', 'Ou veja a demonstração sem câmera.'],
+    steps: ['Use um celular ou tablet com câmera traseira.', 'Ou use a Prévia 3D na página da obra.'],
     retry: true,
   },
   'camera-busy': {
@@ -67,7 +69,7 @@ const ERRORS: Record<ErrorKind, ErrorCopy> = {
   engine: {
     title: 'Falha no reconhecimento',
     text: 'O motor de reconhecimento de imagem não conseguiu iniciar neste aparelho.',
-    steps: ['Feche outras abas e tente de novo.', 'Ou veja a demonstração sem câmera.'],
+    steps: ['Feche outras abas e tente de novo.', 'Ou use a Prévia 3D na página da obra.'],
     retry: true,
   },
   generic: {
@@ -76,6 +78,15 @@ const ERRORS: Record<ErrorKind, ErrorCopy> = {
     steps: ['Recarregue a página e tente novamente.'],
     retry: true,
   },
+};
+
+const CAMERA_HINTS: Record<string, string> = {
+  dark: 'Está escuro: acenda uma luz ou aproxime-se de uma janela.',
+  glare: 'Reflexo forte na imagem: incline um pouco o celular para tirar o brilho.',
+  shaky: 'A imagem está tremendo: segure o celular firme por um instante.',
+  blurry: 'A imagem está desfocada: afaste um pouco ou toque na tela para focar.',
+  'frame-it': 'Enquadre a obra inteira, de frente, a cerca de 30–60 cm.',
+  'not-registered': 'Ainda não reconheci. Confira se é uma das obras acima; obras parecidas não contam.',
 };
 
 const LOADING_TEXT = {
@@ -94,7 +105,10 @@ export class StatusOverlay {
   private readonly loadingText = $('loading-text');
   private readonly error = $('error');
   private readonly fps = $('fps');
+  private readonly targets = $('targets');
+  private readonly caption = $('caption');
   private distanceHint: DistanceHint = null;
+  private cameraHint: CameraHint = null;
   private state: ExperienceState = { kind: 'idle' };
 
   constructor(showFps: boolean) {
@@ -111,6 +125,8 @@ export class StatusOverlay {
     const tracking = state.kind === 'scanning' || state.kind === 'found' || state.kind === 'lost';
     this.status.hidden = !tracking;
     this.frame.hidden = !(state.kind === 'scanning' || state.kind === 'lost');
+    this.targets.hidden = this.frame.hidden || this.targets.childElementCount === 0;
+    if (state.kind !== 'found') this.caption.hidden = true;
 
     switch (state.kind) {
       case 'loading':
@@ -136,7 +152,43 @@ export class StatusOverlay {
   renderDemo(): void {
     this.render({ kind: 'idle' });
     this.status.hidden = false;
-    this.setStatus('cube', 'Demonstração sem câmera · arraste para girar', 'demo');
+    this.setStatus('cube', 'Prévia 3D · arraste para girar', 'demo');
+  }
+
+  /** Miniaturas das obras que a câmera está procurando (evita "apontei para a obra errada"). */
+  setTargets(artworks: ArtworkEntry[]): void {
+    const label = document.createElement('span');
+    label.textContent = artworks.length === 1 ? 'Procurando:' : `Procurando ${artworks.length} obras:`;
+    const thumbs = artworks.slice(0, 6).map((a) => {
+      const img = document.createElement('img');
+      img.src = a.imageUrl;
+      img.alt = a.name;
+      img.title = a.name;
+      return img;
+    });
+    this.targets.replaceChildren(label, ...thumbs);
+  }
+
+  /** Obra reconhecida: mostra título e a frase da curadoria/IA. */
+  setArtwork(a: ArtworkEntry | null): void {
+    if (!a) {
+      this.caption.hidden = true;
+      return;
+    }
+    const title = document.createElement('strong');
+    title.textContent = a.name;
+    this.caption.replaceChildren(title);
+    if (a.scene.caption) {
+      const p = document.createElement('span');
+      p.textContent = a.scene.caption;
+      this.caption.append(p);
+    }
+    this.caption.hidden = false;
+  }
+
+  setCameraHint(hint: CameraHint): void {
+    this.cameraHint = hint;
+    this.renderHint();
   }
 
   setDistanceHint(hint: DistanceHint): void {
@@ -155,8 +207,10 @@ export class StatusOverlay {
 
   private renderHint(): void {
     let text = '';
-    if (this.state.kind === 'scanning') text = 'Enquadre a obra inteira, com boa luz e sem reflexos.';
-    else if (this.state.kind === 'lost') text = 'Aponte de novo para a obra para retomar.';
+    if (this.state.kind === 'scanning' || this.state.kind === 'lost') {
+      text = CAMERA_HINTS[this.cameraHint ?? 'none'] ?? '';
+      if (!text) text = this.state.kind === 'lost' ? 'Aponte de novo para a obra para retomar.' : 'Aponte para a obra, inteira no quadro.';
+    }
     else if (this.state.kind === 'found') {
       if (this.distanceHint === 'too-far') text = 'Aproxime-se um pouco da obra.';
       else if (this.distanceHint === 'too-close') text = 'Afaste-se um pouco para enquadrar a obra.';
@@ -178,6 +232,6 @@ export class StatusOverlay {
       }),
     );
     $('btn-retry').hidden = !copy.retry;
-    queueMicrotask(() => ($(copy.retry ? 'btn-retry' : 'btn-error-demo') as HTMLButtonElement).focus());
+    queueMicrotask(() => ($(copy.retry ? 'btn-retry' : 'btn-error-back') as HTMLButtonElement).focus());
   }
 }

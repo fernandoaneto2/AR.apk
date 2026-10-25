@@ -1,6 +1,14 @@
-# WebAR · Arte Expandida — Entrega 1 (POC)
+# WebAR · Arte Expandida
 
-Prova de conceito web (sem instalar app): a câmera do celular reconhece uma **obra física original impressa** e sobrepõe **três elementos 3D** alinhados à superfície — uma forma flutuante, um anel em rotação e partículas. Acesso por link/QR Code, HTTPS.
+App web (sem instalar nada): **a pessoa cadastra a própria obra** (foto ou galeria), a **IA (Claude) entende a imagem** e configura a experiência, e ao apontar a câmera do celular para a obra física surgem **efeitos 3D gerados da própria pintura** — camadas que saltam em relevo, partículas nas cores da obra, aura de reconhecimento e, opcionalmente, um objeto 3D. Acesso por link/QR Code, HTTPS.
+
+### Como funciona
+
+1. **Cadastrar:** foto ou imagem da galeria → **detecção automática dos cantos** da obra + correção de perspectiva (ajustável à mão) → **alvo de reconhecimento compilado no próprio celular**.
+2. **Analisar:** nota de reconhecimento (0–100) calculada a partir dos pontos reais que o motor usa, com dicas concretas; paleta, ponto de interesse e clima da obra. Com IA ligada, Claude sugere título, descrição acessível, legenda e efeitos (`api/analyze.ts`).
+3. **Apontar:** reconhece **qualquer uma das obras cadastradas** (até 8) e mostra a legenda; enquanto procura, a câmera analisa o vídeo localmente e avisa sobre **escuro, reflexo, tremor, desfoque** e mostra **quais obras** está procurando.
+
+As obras ficam no IndexedDB do aparelho. Só a imagem da obra (nunca a câmera) vai para a IA, e só se a pessoa permitir.
 
 **Demo publicada:** https://webar-arte-expandida.vercel.app · folha para imprimir: https://webar-arte-expandida.vercel.app/imprimir.html
 
@@ -18,6 +26,10 @@ Prova de conceito web (sem instalar app): a câmera do celular reconhece uma **o
 No computador, a tela inicial mostra um QR Code para continuar no celular.
 
 Adicione `?debug=1` à URL para ver FPS e o contorno de registro do alvo (útil para avaliar jitter).
+
+## IA (Claude)
+
+A análise usa a função serverless `api/analyze.ts` (modelo `claude-opus-5-5`, saída estruturada validada com Zod, fallback de recusa do servidor). Para ativar, defina **`ANTHROPIC_API_KEY`** nas variáveis de ambiente do projeto na Vercel (*Settings › Environment Variables*) e refaça o deploy. Sem a chave, o app funciona normalmente com a análise local e avisa que a IA não está configurada.
 
 ## Rodar localmente
 
@@ -42,7 +54,7 @@ No celular via `dev:https`, aceite o aviso de certificado (iOS: "Mostrar detalhe
 | `npm run build` | typecheck + `vite build` |
 | `npm run art` | regenera a arte original (determinística, seed 2026) em `public/images/` |
 | `npm run target` | compila a imagem em `public/targets/obra-original.mind` com o compilador do próprio MindAR (Chromium headless) |
-| `npm run test:e2e` | teste ponta a ponta com câmera simulada (requer `npm run build`, ffmpeg e Playwright); `-- --url https://...` testa um deploy publicado |
+| `npm run test:e2e` | E2E com câmera simulada: rastreamento da obra de exemplo + cadastro de obra nova (detecção de cantos, compilação, IA simulada) e reconhecimento de 2 obras (requer `npm run build`, ffmpeg, Playwright e `python3 tests/fixtures/make-fixtures.py`) |
 
 `art`, `target` e `test:e2e` usam Playwright (Chromium). Se não estiver instalado: `npm i -D playwright && npx playwright install chromium`.
 
@@ -58,8 +70,12 @@ src/
   ar/mindarEngine.ts      implementação com MindAR Controller
   ar/camera.ts            getUserMedia, classificação de erros, encerramento de tracks
   ar/trackingState.ts     máquina de estados (loading/scanning/found/lost/error)
-  ar/createExperience.ts  cena Three.js, âncora, loop, resize/rotação, desmontagem; modo demo
-  effects/createFloatingShapes.ts   os três efeitos 3D
+  ar/frameAdvisor.ts      análise local do vídeo: escuro, reflexo, tremor, desfoque
+  ar/createExperience.ts  cena Three.js, várias âncoras, loop, resize/rotação, desmontagem; prévia 3D
+  artworks/               cadastro: recorte/perspectiva, análise, compilação, IA, IndexedDB, catálogo
+  effects/sceneEffects.ts efeitos gerados da obra: camadas, partículas, aura, objeto 3D
+  scene/types.ts          configuração de cena (compartilhada com a API)
+api/analyze.ts            função serverless: Claude analisa a obra
   ui/StatusOverlay.ts     HUD, dicas, loading, telas de erro
   ui/qr.ts                QR Code (carregado sob demanda)
   styles/main.css, print.css
