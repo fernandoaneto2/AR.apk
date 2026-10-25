@@ -1,0 +1,7 @@
+{
+  "name": "canvas",
+  "version": "2.11.2",
+  "description": "Stub vazio: mind-ar declara 'canvas' (node-canvas nativo) só para o compilador em Node. No navegador ele não é usado, então evitamos a compilação nativa.",
+  "main": "index.js",
+  "private": true
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111214" />
+    <meta name="description" content="Experiência WebAR: aponte a câmera para a obra impressa e veja camadas digitais 3D sobre ela." />
+    <title>Arte Expandida</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23111214'/%3E%3Cpath d='M12 5l6 3.4v7.2L12 19l-6-3.4V8.4z' fill='none' stroke='%232bb3a8' stroke-width='1.8'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main id="home" class="screen home" aria-labelledby="art-title">
+      <header class="brand">Arte Expandida <span class="brand-tag">WebAR</span></header>
+      <figure class="artwork">
+        <img id="art-preview" alt="" width="1200" height="1600" decoding="async" />
+        <figcaption>
+          <h1 id="art-title"></h1>
+          <p id="art-meta" class="meta"></p>
+        </figcaption>
+      </figure>
+      <p class="instruction">Aponte a câmera para a obra impressa.</p>
+      <div class="actions">
+        <button id="btn-start" class="btn btn-primary" type="button"></button>
+        <button id="btn-demo" class="btn btn-ghost" type="button"></button>
+      </div>
+      <details class="about">
+        <summary>Sobre a experiência e privacidade</summary>
+        <p id="art-description"></p>
+        <p>
+          A câmera é usada apenas para reconhecer a obra, localmente no seu aparelho. Nenhuma imagem ou vídeo é gravado, transmitido
+          ou armazenado.
+        </p>
+      </details>
+    </main>
+
+    <section id="ar" class="screen ar" hidden aria-label="Experiência em realidade aumentada">
+      <div id="ar-stage" class="ar-stage"></div>
+      <div class="hud">
+        <div class="hud-top">
+          <div id="status" class="status" role="status" aria-live="polite"></div>
+          <div class="hud-buttons">
+            <button id="btn-help" class="icon-btn" type="button" aria-label="Ajuda"></button>
+            <button id="btn-close" class="icon-btn" type="button" aria-label="Sair da experiência"></button>
+          </div>
+        </div>
+        <div id="scan-frame" class="scan-frame" aria-hidden="true"></div>
+        <p id="hint" class="hint" aria-live="polite"></p>
+        <p id="fps" class="fps" hidden></p>
+      </div>
+
+      <div id="loading" class="overlay loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loading-text">Carregando…</p>
+      </div>
+
+      <div id="error" class="overlay error" hidden role="alertdialog" aria-labelledby="error-title" aria-describedby="error-text">
+        <div class="panel">
+          <div id="error-icon" class="panel-icon"></div>
+          <h2 id="error-title"></h2>
+          <p id="error-text"></p>
+          <ol id="error-steps" class="steps"></ol>
+          <div class="actions">
+            <button id="btn-retry" class="btn btn-primary" type="button">Tentar novamente</button>
+            <button id="btn-error-demo" class="btn btn-ghost" type="button">Ver demonstração sem câmera</button>
+            <button id="btn-error-back" class="btn btn-link" type="button">Voltar ao início</button>
+          </div>
+        </div>
+      </div>
+
+      <dialog id="help" class="help" aria-labelledby="help-title">
+        <h2 id="help-title">Dicas para reconhecer a obra</h2>
+        <ul>
+          <li>Enquadre a obra inteira, a cerca de 30–60 cm (impressão A4).</li>
+          <li>Prefira luz uniforme e indireta; evite reflexos e sombras fortes.</li>
+          <li>Segure o aparelho firme e mova devagar.</li>
+          <li>Se os elementos sumirem, aponte de novo para a obra.</li>
+          <li>Não está funcionando? Use a demonstração sem câmera na tela inicial.</li>
+        </ul>
+        <form method="dialog"><button class="btn btn-primary" type="submit">Entendi</button></form>
+      </dialog>
+    </section>
+
+    <noscript><p class="noscript">Esta experiência precisa de JavaScript habilitado.</p></noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

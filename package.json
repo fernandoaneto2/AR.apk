@@ -1,0 +1,32 @@
+{
+  "name": "webar-arte-expandida",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:https": "HTTPS=1 vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "art": "node scripts/generate-art.mjs",
+    "target": "node scripts/compile-target.mjs",
+    "test:e2e": "node tests/e2e/tracking.e2e.mjs"
+  },
+  "devDependencies": {
+    "@types/three": "0.186.0",
+    "@vitejs/plugin-basic-ssl": "2.3.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.7"
+  },
+  "overrides": {
+    "canvas": "file:./stubs/canvas"
+  },
+  "dependencies": {
+    "mind-ar": "1.2.5",
+    "three": "0.186.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
