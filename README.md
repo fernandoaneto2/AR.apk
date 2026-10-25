@@ -83,7 +83,7 @@ docs/      ARQUITETURA.md (decisões, riscos, compatibilidade), BACKLOG.md
 
 `vercel.json` já define build (`npm run build`), saída (`dist`) e cabeçalhos de segurança (CSP, Permissions-Policy só com câmera, HSTS, cache). Importar o repositório na Vercel é suficiente. Netlify/outros: publicar `dist/` com HTTPS e replicar os cabeçalhos.
 
-Alternativa: `.github/workflows/pages.yml` publica no GitHub Pages a cada push (requer Pages habilitado em *Settings › Pages › Source: GitHub Actions*; o Pages não aplica os cabeçalhos de segurança).
+Alternativa: `.github/workflows/pages.yml` publica no GitHub Pages sob demanda — habilite *Settings › Pages › Source: GitHub Actions* e rode *Actions › Deploy GitHub Pages › Run workflow*. O Pages não aplica os cabeçalhos de segurança.
 
 ## Privacidade
 
