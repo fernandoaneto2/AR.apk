@@ -9,7 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { DEFAULT_SCENE, MOODS, ORBIT_SHAPES, PARTICLE_MOTIONS, PARTICLE_SHAPES, sanitizeScene, type AIAnalysis, type SceneConfig } from '../src/scene/types';
+import { DEFAULT_SCENE, MOODS, ORBIT_SHAPES, PARTICLE_MOTIONS, PARTICLE_SHAPES, sanitizeScene, type AIAnalysis, type SceneConfig } from '../src/scene/types.js';
 
 const MAX_IMAGE_BYTES = 1_500_000;
 const MODEL = 'claude-opus-5-5';
