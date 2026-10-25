@@ -2,6 +2,8 @@
 
 Prova de conceito web (sem instalar app): a câmera do celular reconhece uma **obra física original impressa** e sobrepõe **três elementos 3D** alinhados à superfície — uma forma flutuante, um anel em rotação e partículas. Acesso por link/QR Code, HTTPS.
 
+**Demo publicada:** https://webar-arte-expandida.vercel.app · folha para imprimir: https://webar-arte-expandida.vercel.app/imprimir.html
+
 > Status: POC implementada e validada em navegador automatizado (ver [Validação](#validação)). **QA em iPhone e Android reais: PENDENTE** — ver [`tests/smoke-checklist.md`](tests/smoke-checklist.md).
 
 ![Obra-alvo](public/images/obra-original.jpg)
@@ -40,7 +42,7 @@ No celular via `dev:https`, aceite o aviso de certificado (iOS: "Mostrar detalhe
 | `npm run build` | typecheck + `vite build` |
 | `npm run art` | regenera a arte original (determinística, seed 2026) em `public/images/` |
 | `npm run target` | compila a imagem em `public/targets/obra-original.mind` com o compilador do próprio MindAR (Chromium headless) |
-| `npm run test:e2e` | teste ponta a ponta com câmera simulada (requer `npm run build`, ffmpeg e Playwright) |
+| `npm run test:e2e` | teste ponta a ponta com câmera simulada (requer `npm run build`, ffmpeg e Playwright); `-- --url https://...` testa um deploy publicado |
 
 `art`, `target` e `test:e2e` usam Playwright (Chromium). Se não estiver instalado: `npm i -D playwright && npx playwright install chromium`.
 
@@ -81,7 +83,7 @@ docs/      ARQUITETURA.md (decisões, riscos, compatibilidade), BACKLOG.md
 
 ## Deploy (Vercel)
 
-`vercel.json` já define build (`npm run build`), saída (`dist`) e cabeçalhos de segurança (CSP, Permissions-Policy só com câmera, HSTS, cache). Importar o repositório na Vercel é suficiente. Netlify/outros: publicar `dist/` com HTTPS e replicar os cabeçalhos.
+`vercel.json` já define build (`npm run build`), saída (`dist`) e cabeçalhos de segurança (CSP, Permissions-Policy só com câmera, HSTS, cache). Projeto Vercel: `webar-arte-expandida` (sem proteção de login, para abrir direto no celular). Importar o repositório na Vercel é suficiente. A branch de produção do projeto é `main`: pushes em outras branches geram deploys de preview. Netlify/outros: publicar `dist/` com HTTPS e replicar os cabeçalhos.
 
 Alternativa: `.github/workflows/pages.yml` publica no GitHub Pages sob demanda — habilite *Settings › Pages › Source: GitHub Actions* e rode *Actions › Deploy GitHub Pages › Run workflow*. O Pages não aplica os cabeçalhos de segurança.
 

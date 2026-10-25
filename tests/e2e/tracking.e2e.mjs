@@ -21,9 +21,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = resolve(ROOT, 'tests/e2e/.artifacts');
 const VIDEO = resolve(OUT, 'fake-camera.y4m');
 const PORT = 4789;
+// `--url https://...` testa um deploy publicado em vez do build local.
+const urlArg = process.argv.indexOf('--url');
+const REMOTE = urlArg > -1 ? process.argv[urlArg + 1].replace(/\/$/, '') : null;
 
 await mkdir(OUT, { recursive: true });
-if (!existsSync(resolve(ROOT, 'dist/index.html'))) throw new Error('Rode `npm run build` antes.');
+if (!REMOTE && !existsSync(resolve(ROOT, 'dist/index.html'))) throw new Error('Rode `npm run build` antes.');
 
 // Linha do tempo do vídeo (s): 0–1.5 sem obra | 1.5–7 obra | 7–9.5 sem obra | 9.5–16 obra.
 if (!existsSync(VIDEO) || process.argv.includes('--regen')) {
@@ -44,11 +47,11 @@ execFileSync(
 );
 }
 
-const server = spawn(process.execPath, [resolve(ROOT, 'node_modules/vite/bin/vite.js'), 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
+const server = REMOTE ? null : spawn(process.execPath, [resolve(ROOT, 'node_modules/vite/bin/vite.js'), 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
   cwd: ROOT,
   stdio: ['ignore', 'pipe', 'inherit'],
 });
-await new Promise((ok, fail) => {
+if (server) await new Promise((ok, fail) => {
   const t = setTimeout(() => {
     server.kill();
     fail(new Error('vite preview não subiu'));
@@ -84,7 +87,7 @@ try {
     console.error('  [console.error]', m.text());
   });
 
-  await page.goto(`http://127.0.0.1:${PORT}/?debug=1`);
+  await page.goto(`${REMOTE ?? `http://127.0.0.1:${PORT}`}/?debug=1`);
   await page.screenshot({ path: resolve(OUT, '01-home.png') });
   const t0 = Date.now();
   await page.click('#btn-start');
@@ -134,6 +137,6 @@ try {
   console.error('FALHOU:', err.message);
 } finally {
   await browser.close();
-  server.kill();
+  server?.kill();
 }
 process.exit(failed ? 1 : 0);

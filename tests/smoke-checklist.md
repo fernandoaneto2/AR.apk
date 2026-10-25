@@ -56,5 +56,6 @@ Resultado: ✅ ok · ⚠️ ok com ressalva (descrever) · ❌ falhou (descrever
 | Unitários (máquina de estados, classificação de erros da câmera) | `npm test` | ✅ 14/14 |
 | Build de produção | `npm run build` | ✅ |
 | E2E com câmera simulada (Chromium headless, vídeo `.y4m` com a obra aparecendo/sumindo) | `npm run test:e2e` | ✅ scanning → found → lost → found; câmera encerrada ao sair; modo demo; zero violações de CSP |
+| Mesmo E2E contra produção (Vercel, cabeçalhos reais) | `npm run test:e2e -- --url https://webar-arte-expandida.vercel.app` | ✅ found em 3,0 s; lost/found coerentes; zero violações de CSP |
 
 O E2E prova a integração (alvo compilado ↔ motor ↔ eventos ↔ UI), **não** o comportamento óptico real (foco, reflexo, ruído de sensor, desempenho de GPU móvel).
