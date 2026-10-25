@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imprimir obra · Arte Expandida</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23111214'/%3E%3Cpath d='M12 5l6 3.4v7.2L12 19l-6-3.4V8.4z' fill='none' stroke='%232bb3a8' stroke-width='1.8'/%3E%3C/svg%3E" />
+  </head>
+  <body class="print-page">
+    <div class="print-toolbar">
+      <a href="./">← Voltar</a>
+      <p>A4, retrato, escala 100%, sem margens extras. Use papel <strong>fosco</strong>.</p>
+      <button id="btn-print" class="btn btn-primary" type="button">Imprimir</button>
+    </div>
+    <article class="sheet">
+      <img id="sheet-art" class="sheet-art" alt="" width="1200" height="1600" />
+      <footer class="sheet-footer">
+        <div id="sheet-qr" class="sheet-qr" role="img" aria-label="QR Code da experiência"></div>
+        <div>
+          <h1 id="sheet-title"></h1>
+          <p id="sheet-meta" class="sheet-meta"></p>
+          <p class="sheet-how">Escaneie o QR Code, toque em <strong>Iniciar experiência</strong> e aponte a câmera para a obra acima.</p>
+          <p id="sheet-url" class="sheet-url"></p>
+        </div>
+      </footer>
+    </article>
+    <script type="module" src="/src/print.ts"></script>
+  </body>
+</html>

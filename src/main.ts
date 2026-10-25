@@ -5,6 +5,7 @@ import { startARExperience, startDemoExperience, type Experience } from './ar/cr
 import { TrackingStateMachine } from './ar/trackingState';
 import { StatusOverlay } from './ui/StatusOverlay';
 import { icons } from './ui/icons';
+import { experienceUrl, qrSvg } from './ui/qr';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -33,6 +34,16 @@ $('art-meta').textContent = `${ARTWORK.author} · ${ARTWORK.year}`;
 $('art-description').textContent = ARTWORK.description;
 $('btn-start').innerHTML = `${icons.camera}<span>Iniciar experiência</span>`;
 $('btn-demo').innerHTML = `${icons.cube}<span>Ver demonstração sem câmera</span>`;
+
+// No computador (ponteiro fino, sem toque), oferece um QR Code para continuar no celular.
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  qrSvg(experienceUrl())
+    .then((svg) => {
+      $('handoff-qr').innerHTML = svg;
+      $('handoff').hidden = false;
+    })
+    .catch((err) => console.warn('[webar] QR indisponível', err));
+}
 
 let current: Experience | null = null;
 let starting = false;

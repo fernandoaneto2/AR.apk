@@ -8,16 +8,18 @@ Prova de conceito web (sem instalar app): a câmera do celular reconhece uma **o
 
 ## Como testar no celular
 
-1. Imprima [`public/images/obra-original.png`](public/images/obra-original.png) em A4 ou maior, **papel fosco**, sem cortar bordas. (Também funciona apontando para a imagem aberta numa tela, com menos estabilidade por causa de reflexo/moiré.)
+1. Abra `/imprimir.html` no site publicado (folha A4 com a obra + QR Code da experiência) e imprima em **papel fosco**, escala 100%. Ou imprima [`public/images/obra-original.png`](public/images/obra-original.png) em A4 ou maior, sem cortar bordas. (Também funciona apontando para a imagem aberta numa tela, com menos estabilidade por causa de reflexo/moiré.)
 2. Abra a URL HTTPS publicada (ou leia o QR Code) no **Safari (iPhone)** ou **Chrome (Android)**.
 3. Toque em **Iniciar experiência**, permita a câmera e enquadre a obra inteira a ~30–60 cm.
 4. Sem câmera? **Ver demonstração sem câmera** mostra os efeitos sobre a obra em 3D.
+
+No computador, a tela inicial mostra um QR Code para continuar no celular.
 
 Adicione `?debug=1` à URL para ver FPS e o contorno de registro do alvo (útil para avaliar jitter).
 
 ## Rodar localmente
 
-Requisitos: Node 20+ (testado com Node 22.22.0 / npm 10.9.4).
+Requisitos: Node 22.12+ (testado com Node 22.22.0 / npm 10.9.4).
 
 ```bash
 npm ci
@@ -34,6 +36,7 @@ No celular via `dev:https`, aceite o aviso de certificado (iOS: "Mostrar detalhe
 | Comando | O que faz |
 | --- | --- |
 | `npm run typecheck` | `tsc --noEmit` (modo strict) |
+| `npm test` | testes unitários (Vitest) |
 | `npm run build` | typecheck + `vite build` |
 | `npm run art` | regenera a arte original (determinística, seed 2026) em `public/images/` |
 | `npm run target` | compila a imagem em `public/targets/obra-original.mind` com o compilador do próprio MindAR (Chromium headless) |
@@ -56,8 +59,10 @@ src/
   ar/createExperience.ts  cena Three.js, âncora, loop, resize/rotação, desmontagem; modo demo
   effects/createFloatingShapes.ts   os três efeitos 3D
   ui/StatusOverlay.ts     HUD, dicas, loading, telas de erro
-  styles/main.css
+  ui/qr.ts                QR Code (carregado sob demanda)
+  styles/main.css, print.css
   main.ts                 telas e fluxo
+  print.ts                página imprimir.html (obra + QR em A4)
 scripts/   generate-art.mjs, compile-target.mjs, compile-target.md
 tests/     smoke-checklist.md (QA físico), e2e/tracking.e2e.mjs (automatizado)
 docs/      ARQUITETURA.md (decisões, riscos, compatibilidade), BACKLOG.md
@@ -77,6 +82,8 @@ docs/      ARQUITETURA.md (decisões, riscos, compatibilidade), BACKLOG.md
 ## Deploy (Vercel)
 
 `vercel.json` já define build (`npm run build`), saída (`dist`) e cabeçalhos de segurança (CSP, Permissions-Policy só com câmera, HSTS, cache). Importar o repositório na Vercel é suficiente. Netlify/outros: publicar `dist/` com HTTPS e replicar os cabeçalhos.
+
+Alternativa: `.github/workflows/pages.yml` publica no GitHub Pages a cada push (requer Pages habilitado em *Settings › Pages › Source: GitHub Actions*; o Pages não aplica os cabeçalhos de segurança).
 
 ## Privacidade
 

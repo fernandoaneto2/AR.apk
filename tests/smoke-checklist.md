@@ -37,6 +37,7 @@ Resultado: ✅ ok · ⚠️ ok com ressalva (descrever) · ❌ falhou (descrever
 | 13 | Rede | Primeira carga em 4G e em Wi-Fi (aba anônima) | Sem erros silenciosos; anotar tempo até "Procurando" | | |
 | 14 | Demo | "Ver demonstração sem câmera" | Obra em 3D com efeitos, arrastar gira | | |
 | 15 | Acessibilidade | Ativar "Reduzir movimento" no sistema | Animações mais lentas, menos partículas | | |
+| 16 | QR / impressão | Abrir a página no computador; ler o QR com o celular; imprimir `/imprimir.html` | QR abre a experiência; folha A4 em 1 página | | |
 
 ## Medições (metas iniciais, não garantias)
 
@@ -52,6 +53,7 @@ Resultado: ✅ ok · ⚠️ ok com ressalva (descrever) · ❌ falhou (descrever
 | Teste | Comando | Resultado |
 | --- | --- | --- |
 | Typecheck strict | `npm run typecheck` | ✅ sem erros |
+| Unitários (máquina de estados, classificação de erros da câmera) | `npm test` | ✅ 14/14 |
 | Build de produção | `npm run build` | ✅ |
 | E2E com câmera simulada (Chromium headless, vídeo `.y4m` com a obra aparecendo/sumindo) | `npm run test:e2e` | ✅ scanning → found → lost → found; câmera encerrada ao sair; modo demo; zero violações de CSP |
 

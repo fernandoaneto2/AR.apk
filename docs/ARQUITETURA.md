@@ -53,6 +53,9 @@ Espaço da âncora: largura do alvo = 1, origem no centro da obra, +Z saindo da 
 | --- | --- | --- |
 | Instalação limpa | `npm ci` | ok (com stub de `canvas`) |
 | Typecheck | `npm run typecheck` | 0 erros |
+| Unitários | `npm test` | 14/14 (Vitest 5.0.5) |
+| CI GitHub Actions | `.github/workflows/ci.yml` | verde em `npm ci` limpo |
+| Telas | screenshots (desktop 1280, celular 390, paisagem 844×390, imprimir) | sem erros de console; folha A4 = 1 página no PDF |
 | Build | `npm run build` | ok; `index` 552 KB (142 KB gzip), `mindar` 1,05 MB (283 KB gzip, lazy) |
 | Compilação do alvo | `npm run target` | `.mind` 929 KB em ~11 s |
 | Detecção isolada | script de diagnóstico (canvas estático 640×480) | 773/773 atualizações com alvo encontrado em 15 s |

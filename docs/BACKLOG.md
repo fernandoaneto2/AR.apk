@@ -28,4 +28,4 @@
 
 - MindAR 1.2.5 traz TF.js 4 inteiro no chunk do motor (~1 MB); avaliar build próprio ou motor alternativo.
 - `Controller.dispose()` do MindAR não encerra o worker — fazemos `worker.terminate()` manualmente.
-- Sem testes unitários ainda (lógica de estado/erros é pequena; candidatos: `classifyCameraError`, `TrackingStateMachine`).
+- Testes unitários cobrem estado e erros; faltam testes de efeitos/renderização (hoje cobertos só pelo E2E).

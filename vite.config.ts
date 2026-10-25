@@ -19,6 +19,9 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
+    rollupOptions: {
+      input: { main: 'index.html', imprimir: 'imprimir.html' },
+    },
     // O chunk do MindAR (~2 MB) é carregado sob demanda, só ao iniciar a experiência.
     chunkSizeWarningLimit: 2600,
   },

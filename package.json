@@ -11,22 +11,26 @@
     "typecheck": "tsc --noEmit",
     "art": "node scripts/generate-art.mjs",
     "target": "node scripts/compile-target.mjs",
-    "test:e2e": "node tests/e2e/tracking.e2e.mjs"
+    "test:e2e": "node tests/e2e/tracking.e2e.mjs",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@types/qrcode": "1.5.6",
     "@types/three": "0.186.0",
     "@vitejs/plugin-basic-ssl": "2.3.0",
     "typescript": "5.9.3",
-    "vite": "7.3.7"
+    "vite": "7.3.7",
+    "vitest": "5.0.5"
   },
   "overrides": {
     "canvas": "file:./stubs/canvas"
   },
   "dependencies": {
     "mind-ar": "1.2.5",
+    "qrcode": "1.5.4",
     "three": "0.186.1"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   }
 }
